@@ -3,65 +3,837 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>SMART App - Patient Info</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART App - 病患資訊總覽</title>
     <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #1a5276;
+            --primary-light: #2980b9;
+            --secondary-color: #16a085;
+            --accent-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #27ae60;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e1e8ed;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
-            padding: 20px;
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
             line-height: 1.6;
+            min-height: 100vh;
         }
 
-        #output {
-            background: #f4f4f4;
-            padding: 15px;
-            border-radius: 5px;
-            white-space: pre-wrap;
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .loading {
-            color: #666;
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-time {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Patient Card */
+        .patient-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 5px solid var(--primary-color);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .patient-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .patient-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .patient-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .patient-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .patient-id {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .patient-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .gender-male {
+            color: #3498db;
+        }
+
+        .gender-female {
+            color: #e91e8b;
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .section-icon.vital {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+
+        .section-icon.lab {
+            background: rgba(22, 160, 133, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .section-icon.obs {
+            background: rgba(41, 128, 185, 0.1);
+            color: var(--primary-light);
+        }
+
+        /* Results Grid */
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .results-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .results-section:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Result Items */
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--bg-color);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+            background: #e8f4f8;
+        }
+
+        .result-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-value-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-unit {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .result-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-normal {
+            background: var(--success-color);
+        }
+
+        .status-warning {
+            background: var(--warning-color);
+        }
+
+        .status-critical {
+            background: var(--accent-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.2);
+            }
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-normal {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+
+        .badge-critical {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error State */
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        /* No Data */
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
             font-style: italic;
+        }
+
+        /* Expandable JSON Section */
+        .json-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+
+        .json-header {
+            padding: 1rem 1.5rem;
+            background: var(--bg-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .json-header:hover {
+            background: #e8f4f8;
+        }
+
+        .json-toggle {
+            transition: transform 0.3s;
+        }
+
+        .json-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .json-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .json-content.open {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .json-output {
+            padding: 1.5rem;
+            background: #1e272e;
+            color: #a4b0be;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+
+            .patient-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .patient-info-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h2>病患基本資料 (FHIR R4)</h2>
-    <div id="patient-display">
-        <p class="loading">正在讀取病患資料，請稍候...</p>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>
+                <div class="header-icon">🏥</div>
+                SMART on FHIR 病患資訊系統
+            </h1>
+            <div class="header-time" id="current-time"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Patient Basic Info -->
+        <div id="patient-display">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>正在載入病患資料，請稍候...</p>
+            </div>
+        </div>
+
+        <!-- Observations & Results -->
+        <div id="results-display"></div>
+
+        <!-- JSON Debug Section -->
+        <div class="json-section" id="json-section" style="display: none;">
+            <div class="json-header" onclick="toggleJson()">
+                <span>📋 原始 FHIR 資料 (JSON)</span>
+                <span class="json-toggle" id="json-toggle">▼</span>
+            </div>
+            <div class="json-content" id="json-content">
+                <div class="json-output" id="json-output"></div>
+            </div>
+        </div>
     </div>
-    <hr>
-    <h3>原始 JSON 資料：</h3>
-    <div id="output">等待資料中...</div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>SMART on FHIR Application • FHIR R4</p>
+    </footer>
 
     <script>
-        // 當頁面載入時，呼叫 ready() 完成 Token 交換
-        FHIR.oauth2.ready()
-            .then(function (client) {
-                // 1. 取得當前 Context 中的 Patient ID
-                const patientId = client.patient.id;
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                weekday: 'short'
+            };
+            document.getElementById('current-time').textContent = now.toLocaleString('zh-TW', options);
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
 
-                // 2. 向 FHIR Server 請求該病人的資料
-                return client.request("Patient/" + patientId);
-            })
-            .then(function (patient) {
-                // 3. 處理並顯示資料
-                const name = patient.name ? patient.name[0].text : "未知姓名";
-                const gender = patient.gender || "未標註";
-                const dob = patient.birthDate || "未標註";
+        // Toggle JSON section
+        function toggleJson() {
+            const content = document.getElementById('json-content');
+            const toggle = document.getElementById('json-toggle');
+            content.classList.toggle('open');
+            toggle.classList.toggle('open');
+        }
 
-                document.getElementById("patient-display").innerHTML = `
-                    <p><strong>姓名：</strong> ${name}</p>
-                    <p><strong>性別：</strong> ${gender}</p>
-                    <p><strong>生日：</strong> ${dob}</p>
+        // Gender translation
+        function translateGender(gender) {
+            const genderMap = {
+                'male': '男性',
+                'female': '女性',
+                'other': '其他',
+                'unknown': '未知'
+            };
+            return genderMap[gender] || gender || '未標註';
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '未標註';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        // Calculate age
+        function calculateAge(birthDate) {
+            if (!birthDate) return '';
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age + ' 歲';
+        }
+
+        // Get name initials for avatar
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.charAt(0).toUpperCase();
+        }
+
+        // Determine value status
+        function getValueStatus(code, value) {
+            // Define normal ranges for common tests
+            const normalRanges = {
+                // Vital Signs
+                'heart-rate': { low: 60, high: 100 },
+                'respiratory-rate': { low: 12, high: 20 },
+                'body-temperature': { low: 36.1, high: 37.2 },
+                'oxygen-saturation': { low: 95, high: 100 },
+                'systolic-bp': { low: 90, high: 140 },
+                'diastolic-bp': { low: 60, high: 90 },
+                // Labs
+                'glucose': { low: 70, high: 100 },
+                'hemoglobin': { low: 12, high: 17 },
+                'wbc': { low: 4000, high: 11000 },
+                'platelet': { low: 150000, high: 400000 },
+                'creatinine': { low: 0.6, high: 1.2 },
+            };
+
+            const range = normalRanges[code];
+            if (!range || isNaN(value)) return 'normal';
+
+            const numValue = parseFloat(value);
+            if (numValue < range.low * 0.8 || numValue > range.high * 1.2) return 'critical';
+            if (numValue < range.low || numValue > range.high) return 'warning';
+            return 'normal';
+        }
+
+        // Categorize observations
+        function categorizeObservations(observations) {
+            const categories = {
+                vitalSigns: {
+                    title: '生命徵象',
+                    icon: '❤️',
+                    iconClass: 'vital',
+                    items: []
+                },
+                laboratory: {
+                    title: '實驗室檢驗',
+                    icon: '🔬',
+                    iconClass: 'lab',
+                    items: []
+                },
+                other: {
+                    title: '其他觀察紀錄',
+                    icon: '📊',
+                    iconClass: 'obs',
+                    items: []
+                }
+            };
+
+            const vitalSignCodes = [
+                '8867-4', // Heart rate
+                '9279-1', // Respiratory rate
+                '8310-5', // Body temperature
+                '2708-6', // Oxygen saturation
+                '85354-9', // Blood pressure panel
+                '8480-6', // Systolic BP
+                '8462-4', // Diastolic BP
+                '29463-7', // Body weight
+                '8302-2', // Body height
+                '39156-5', // BMI
+            ];
+
+            const labCodes = [
+                '2339-0', // Glucose
+                '718-7', // Hemoglobin
+                '6690-2', // WBC
+                '777-3', // Platelet
+                '2160-0', // Creatinine
+                '3094-0', // BUN
+                '1742-6', // ALT
+                '1920-8', // AST
+                '2093-3', // Cholesterol
+                '2571-8', // Triglyceride
+            ];
+
+            observations.forEach(obs => {
+                if (!obs.resource) return;
+
+                const resource = obs.resource;
+                const coding = resource.code?.coding?.[0];
+                const code = coding?.code || '';
+
+                let category = 'other';
+                if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || vitalSignCodes.includes(code)) {
+                    category = 'vitalSigns';
+                } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || labCodes.includes(code)) {
+                    category = 'laboratory';
+                }
+
+                const item = {
+                    name: coding?.display || resource.code?.text || '未知項目',
+                    value: resource.valueQuantity?.value ?? resource.valueString ?? '--',
+                    unit: resource.valueQuantity?.unit || '',
+                    date: resource.effectiveDateTime || resource.issued,
+                    code: code
+                };
+
+                categories[category].items.push(item);
+            });
+
+            return categories;
+        }
+
+        // Render patient info
+        function renderPatientInfo(patient) {
+            const name = patient.name?.[0]?.text ||
+                (patient.name?.[0]?.family + patient.name?.[0]?.given?.join('')) ||
+                '未知姓名';
+            const gender = translateGender(patient.gender);
+            const genderClass = patient.gender === 'male' ? 'gender-male' : patient.gender === 'female' ? 'gender-female' : '';
+            const birthDate = patient.birthDate;
+            const age = calculateAge(birthDate);
+            const patientId = patient.id || '未知';
+            const phone = patient.telecom?.find(t => t.system === 'phone')?.value || '未登錄';
+            const address = patient.address?.[0]?.text ||
+                (patient.address?.[0]?.city + patient.address?.[0]?.line?.join('')) ||
+                '未登錄';
+
+            return `
+                <div class="patient-card">
+                    <div class="patient-header">
+                        <div class="patient-avatar">${getInitials(name)}</div>
+                        <div>
+                            <div class="patient-name">${name}</div>
+                            <div class="patient-id">病患ID: ${patientId}</div>
+                        </div>
+                    </div>
+                    <div class="patient-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">性別</span>
+                            <span class="info-value ${genderClass}">${gender}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">出生日期</span>
+                            <span class="info-value">${formatDate(birthDate)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">年齡</span>
+                            <span class="info-value">${age || '未知'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">聯絡電話</span>
+                            <span class="info-value">${phone}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">地址</span>
+                            <span class="info-value">${address}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render observation categories
+        function renderObservations(categories) {
+            let html = '<div class="results-container">';
+
+            for (const [key, category] of Object.entries(categories)) {
+                if (category.items.length === 0) continue;
+
+                html += `
+                    <div class="results-section">
+                        <div class="section-title">
+                            <div class="section-icon ${category.iconClass}">${category.icon}</div>
+                            ${category.title}
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 400;">(${category.items.length}項)</span>
+                        </div>
+                        <div class="result-list">
                 `;
 
-                document.getElementById("output").innerText = JSON.stringify(patient, null, 4);
+                category.items.forEach(item => {
+                    const status = getValueStatus(item.code, item.value);
+                    const badgeClass = status === 'critical' ? 'badge-critical' : status === 'warning' ? 'badge-warning' : 'badge-normal';
+                    const badgeText = status === 'critical' ? '異常' : status === 'warning' ? '偏離' : '正常';
+
+                    html += `
+                        <div class="result-item">
+                            <div class="result-name">
+                                <span class="status-indicator status-${status}"></span>
+                                ${item.name}
+                            </div>
+                            <div class="result-value-container">
+                                <span class="result-value">${item.value}</span>
+                                <span class="result-unit">${item.unit}</span>
+                                <span class="badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+
+            // Check if all categories are empty
+            const totalItems = Object.values(categories).reduce((sum, cat) => sum + cat.items.length, 0);
+            if (totalItems === 0) {
+                html = `
+                    <div class="results-section">
+                        <div class="no-data">
+                            <p>📭 目前沒有可顯示的檢查結果</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        // Main FHIR client logic
+        FHIR.oauth2.ready()
+            .then(async function (client) {
+                const patientId = client.patient.id;
+                let allData = {};
+
+                try {
+                    // Fetch patient data
+                    const patient = await client.request("Patient/" + patientId);
+                    allData.patient = patient;
+                    document.getElementById("patient-display").innerHTML = renderPatientInfo(patient);
+
+                    // Fetch observations (vital signs, labs, etc.)
+                    const observations = await client.request(`Observation?patient=${patientId}&_count=50&_sort=-date`);
+                    allData.observations = observations;
+
+                    if (observations.entry && observations.entry.length > 0) {
+                        const categories = categorizeObservations(observations.entry);
+                        document.getElementById("results-display").innerHTML = renderObservations(categories);
+                    } else {
+                        document.getElementById("results-display").innerHTML = `
+                            <div class="results-section">
+                                <div class="no-data">
+                                    <p>📭 目前沒有可顯示的檢查結果</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Show JSON section
+                    document.getElementById("json-section").style.display = "block";
+                    document.getElementById("json-output").textContent = JSON.stringify(allData, null, 2);
+
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    document.getElementById("results-display").innerHTML = `
+                        <div class="error-message">
+                            <p>⚠️ 無法載入檢查結果：${error.message}</p>
+                        </div>
+                    `;
+                }
             })
             .catch(function (error) {
                 console.error(error);
-                document.getElementById("patient-display").innerHTML = `<p style="color:red">出錯了：${error.message}</p>`;
+                document.getElementById("patient-display").innerHTML = `
+                    <div class="error-message">
+                        <p>❌ 無法連接 FHIR 伺服器：${error.message}</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem;">請確認您已正確完成授權流程</p>
+                    </div>
+                `;
             });
     </script>
 </body>
