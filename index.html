@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SMART App - Patient Info</title>
+    <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        #output {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>病患基本資料 (FHIR R4)</h2>
+    <div id="patient-display">
+        <p class="loading">正在讀取病患資料，請稍候...</p>
+    </div>
+    <hr>
+    <h3>原始 JSON 資料：</h3>
+    <div id="output">等待資料中...</div>
+
+    <script>
+        // 當頁面載入時，呼叫 ready() 完成 Token 交換
+        FHIR.oauth2.ready()
+            .then(function (client) {
+                // 1. 取得當前 Context 中的 Patient ID
+                const patientId = client.patient.id;
+
+                // 2. 向 FHIR Server 請求該病人的資料
+                return client.request("Patient/" + patientId);
+            })
+            .then(function (patient) {
+                // 3. 處理並顯示資料
+                const name = patient.name ? patient.name[0].text : "未知姓名";
+                const gender = patient.gender || "未標註";
+                const dob = patient.birthDate || "未標註";
+
+                document.getElementById("patient-display").innerHTML = `
+                    <p><strong>姓名：</strong> ${name}</p>
+                    <p><strong>性別：</strong> ${gender}</p>
+                    <p><strong>生日：</strong> ${dob}</p>
+                `;
+
+                document.getElementById("output").innerText = JSON.stringify(patient, null, 4);
+            })
+            .catch(function (error) {
+                console.error(error);
+                document.getElementById("patient-display").innerHTML = `<p style="color:red">出錯了：${error.message}</p>`;
+            });
+    </script>
+</body>
+
+</html>

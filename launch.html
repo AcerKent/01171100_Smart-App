@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SMART App Launch</title>
+    <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+</head>
+
+<body>
+    <p>正在連線至 EHR 系統並進行授權...</p>
+
+    <script>
+        // FHIR.oauth2.authorize 會自動處理 URL 中的 iss 和 launch 參數
+        FHIR.oauth2.authorize({
+            "clientId": "my_web_app", // 模擬器環境可自訂
+            "scope": "launch patient/*.read openid fhirUser",
+            "redirectUri": "index.html" // 授權成功後跳轉回來的頁面
+        });
+    </script>
+</body>
+
+</html>
