@@ -35,7 +35,6 @@
             --status-normal: #00ff9d;
             --status-warning: #ffc107;
             --status-critical: #ff4757;
-            --status-unknown: #6c7a89;
 
             /* Text Colors */
             --text-primary: #ffffff;
@@ -831,6 +830,15 @@
         // ========================================
         // HELPER FUNCTIONS
         // ========================================
+
+        // XSS Protection: Escape HTML special characters
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
         function translateGender(gender) {
             const map = { 'male': '男性', 'female': '女性', 'other': '其他', 'unknown': '未知' };
             return map[gender] || gender || '未標註';
@@ -938,35 +946,35 @@
             return `
                 <div class="patient-card">
                     <div class="patient-header">
-                        <div class="patient-avatar">${getInitials(name)}</div>
+                        <div class="patient-avatar">${escapeHtml(getInitials(name))}</div>
                         <div class="patient-main-info">
-                            <div class="patient-name">${name}</div>
+                            <div class="patient-name">${escapeHtml(name)}</div>
                             <div class="patient-id">
                                 <span>病患識別碼</span>
-                                <span class="patient-id-badge">${patientId}</span>
+                                <span class="patient-id-badge">${escapeHtml(patientId)}</span>
                             </div>
                         </div>
                     </div>
                     <div class="patient-info-grid">
                         <div class="info-item">
                             <span class="info-label">性別</span>
-                            <span class="info-value ${genderClass}">${gender}</span>
+                            <span class="info-value ${genderClass}">${escapeHtml(gender)}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">出生日期</span>
-                            <span class="info-value">${formatDate(birthDate)}</span>
+                            <span class="info-value">${escapeHtml(formatDate(birthDate))}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">年齡</span>
-                            <span class="info-value">${age}</span>
+                            <span class="info-value">${escapeHtml(age)}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">聯絡電話</span>
-                            <span class="info-value">${phone}</span>
+                            <span class="info-value">${escapeHtml(phone)}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">通訊地址</span>
-                            <span class="info-value">${address}</span>
+                            <span class="info-value">${escapeHtml(address)}</span>
                         </div>
                     </div>
                 </div>
@@ -1002,11 +1010,11 @@
                         <div class="result-item">
                             <div class="result-name">
                                 <span class="status-dot ${status}"></span>
-                                <span>${item.name}</span>
+                                <span>${escapeHtml(item.name)}</span>
                             </div>
                             <div class="result-value-container">
-                                <span class="result-value">${item.value}</span>
-                                <span class="result-unit">${item.unit}</span>
+                                <span class="result-value">${escapeHtml(item.value)}</span>
+                                <span class="result-unit">${escapeHtml(item.unit)}</span>
                                 <span class="result-badge ${status}">${badgeText}</span>
                             </div>
                         </div>
@@ -1074,7 +1082,7 @@
                         <div class="error-container">
                             <div class="error-icon">⚠️</div>
                             <div class="error-title">無法載入檢查結果</div>
-                            <div class="error-message">${error.message}</div>
+                            <div class="error-message">${escapeHtml(error.message)}</div>
                         </div>
                     `;
                 }
@@ -1086,7 +1094,7 @@
                         <div class="error-container">
                             <div class="error-icon">❌</div>
                             <div class="error-title">無法連接 FHIR 伺服器</div>
-                            <div class="error-message">${error.message}</div>
+                            <div class="error-message">${escapeHtml(error.message)}</div>
                         </div>
                     </div>
                 `;
