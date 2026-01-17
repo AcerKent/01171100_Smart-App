@@ -4,158 +4,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART App - 病患資訊總覽</title>
+    <title>SMART on FHIR | 病患資訊總覽</title>
+    <meta name="description" content="SMART on FHIR 醫療資訊系統 - 病患資料與檢驗結果儀表板">
     <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+
+    <!-- Typography: IBM Plex Sans (professional) + JetBrains Mono (values) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+
     <style>
+        /* ========================================
+           CSS VARIABLES - Clinical Precision Theme
+           ======================================== */
         :root {
-            --primary-color: #1a5276;
-            --primary-light: #2980b9;
-            --secondary-color: #16a085;
-            --accent-color: #e74c3c;
-            --warning-color: #f39c12;
-            --success-color: #27ae60;
-            --bg-color: #f0f4f8;
-            --card-bg: #ffffff;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --border-color: #e1e8ed;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-            --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.1);
+            /* Core Colors */
+            --bg-primary: #0a0e14;
+            --bg-secondary: #1a1f26;
+            --bg-tertiary: #242b35;
+            --bg-elevated: #2a323e;
+
+            /* Accent Colors */
+            --accent-primary: #00d9ff;
+            --accent-secondary: #0099cc;
+            --accent-glow: rgba(0, 217, 255, 0.15);
+
+            /* Status Colors */
+            --status-normal: #00ff9d;
+            --status-warning: #ffc107;
+            --status-critical: #ff4757;
+            --status-unknown: #6c7a89;
+
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #a8b4c4;
+            --text-muted: #6c7a89;
+
+            /* Borders & Effects */
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-accent: rgba(0, 217, 255, 0.3);
+            --glass-bg: rgba(26, 31, 38, 0.85);
+            --glass-blur: blur(20px);
+
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 30px var(--accent-glow);
+
+            /* Typography */
+            --font-primary: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
         }
 
-        * {
+        /* ========================================
+           RESET & BASE STYLES
+           ======================================== */
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-color);
+            font-family: var(--font-primary);
+            background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* Header */
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(0, 217, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 153, 204, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(0, 217, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* ========================================
+           HEADER
+           ======================================== */
         .header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 1.5rem 2rem;
-            box-shadow: var(--shadow);
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: var(--space-lg) var(--space-xl);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
         .header-content {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 500;
+        .header-brand {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: var(--space-md);
         }
 
         .header-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.4rem;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .header-title span {
+            color: var(--accent-primary);
         }
 
         .header-time {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
         }
 
-        /* Main Container */
+        /* ========================================
+           MAIN CONTAINER
+           ======================================== */
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: var(--space-xl);
         }
 
-        /* Patient Card */
+        /* ========================================
+           PATIENT CARD
+           ======================================== */
         .patient-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border-left: 5px solid var(--primary-color);
-            transition: box-shadow 0.3s ease;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+            animation: fadeSlideIn 0.6s ease-out;
         }
 
-        .patient-card:hover {
-            box-shadow: var(--shadow-hover);
+        .patient-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), transparent);
         }
 
         .patient-header {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            gap: var(--space-xl);
+            margin-bottom: var(--space-lg);
         }
 
         .patient-avatar {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-light), var(--secondary-color));
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            color: white;
+            font-size: 2.25rem;
             font-weight: 700;
+            color: var(--bg-primary);
             flex-shrink: 0;
+            box-shadow: var(--shadow-glow), var(--shadow-md);
+            position: relative;
+        }
+
+        .patient-avatar::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-primary);
+            opacity: 0.3;
+        }
+
+        .patient-main-info {
+            flex: 1;
         }
 
         .patient-name {
-            font-size: 1.75rem;
+            font-size: 2rem;
             font-weight: 700;
-            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-xs);
         }
 
         .patient-id {
+            font-family: var(--font-mono);
             font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .patient-id-badge {
+            background: var(--bg-tertiary);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
         }
 
         .patient-info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-lg);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
         }
 
         .info-item {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: var(--space-xs);
         }
 
         .info-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            font-size: 0.75rem;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.1em;
             font-weight: 500;
         }
 
@@ -165,141 +297,383 @@
             color: var(--text-primary);
         }
 
-        .gender-male {
-            color: #3498db;
+        .info-value.male {
+            color: #4fc3f7;
         }
 
-        .gender-female {
-            color: #e91e8b;
+        .info-value.female {
+            color: #f48fb1;
         }
 
-        /* Section Title */
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 1.5rem;
+        /* ========================================
+           SECTION TITLES
+           ======================================== */
+        .section-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
         }
 
         .section-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1.25rem;
         }
 
         .section-icon.vital {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--accent-color);
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.3);
         }
 
         .section-icon.lab {
-            background: rgba(22, 160, 133, 0.1);
-            color: var(--secondary-color);
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(0, 255, 157, 0.3);
         }
 
-        .section-icon.obs {
-            background: rgba(41, 128, 185, 0.1);
-            color: var(--primary-light);
+        .section-icon.other {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
         }
 
-        /* Results Grid */
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .section-count {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+        }
+
+        /* ========================================
+           RESULTS GRID
+           ======================================== */
         .results-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: var(--space-xl);
+            margin-bottom: var(--space-xl);
         }
 
         .results-section {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            padding: 1.5rem;
-            transition: box-shadow 0.3s ease;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            animation: fadeSlideIn 0.6s ease-out backwards;
+        }
+
+        .results-section:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .results-section:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .results-section:nth-child(3) {
+            animation-delay: 0.3s;
         }
 
         .results-section:hover {
-            box-shadow: var(--shadow-hover);
+            border-color: var(--border-accent);
+            box-shadow: var(--shadow-md), var(--shadow-glow);
+            transform: translateY(-2px);
         }
 
-        /* Result Items */
+        /* ========================================
+           RESULT ITEMS
+           ======================================== */
         .result-list {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: var(--space-sm);
         }
 
         .result-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
-            background: var(--bg-color);
-            border-radius: 10px;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
             transition: all 0.2s ease;
         }
 
         .result-item:hover {
-            transform: translateX(5px);
-            background: #e8f4f8;
+            background: var(--bg-tertiary);
+            border-color: var(--border-accent);
+            transform: translateX(4px);
         }
 
         .result-name {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
             font-weight: 500;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
-        .result-value-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .result-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .result-unit {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .result-date {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        /* Status Indicators */
-        .status-indicator {
+        .status-dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
             flex-shrink: 0;
         }
 
-        .status-normal {
-            background: var(--success-color);
+        .status-dot.normal {
+            background: var(--status-normal);
+            box-shadow: 0 0 10px var(--status-normal);
         }
 
-        .status-warning {
-            background: var(--warning-color);
+        .status-dot.warning {
+            background: var(--status-warning);
+            box-shadow: 0 0 10px var(--status-warning);
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
-        .status-critical {
-            background: var(--accent-color);
-            animation: pulse 1.5s infinite;
+        .status-dot.critical {
+            background: var(--status-critical);
+            box-shadow: 0 0 12px var(--status-critical);
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+
+        .result-value-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .result-value {
+            font-family: var(--font-mono);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-unit {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .result-badge {
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .result-badge.normal {
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--status-normal);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+        }
+
+        .result-badge.warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--status-warning);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .result-badge.critical {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--status-critical);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        /* ========================================
+           LOADING STATE
+           ======================================== */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-2xl);
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--bg-tertiary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-lg);
+        }
+
+        .loading-text {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        /* ========================================
+           ERROR STATE
+           ======================================== */
+        .error-container {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .error-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--status-critical);
+            margin-bottom: var(--space-sm);
+        }
+
+        .error-message {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ========================================
+           NO DATA STATE
+           ======================================== */
+        .no-data {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-muted);
+        }
+
+        .no-data-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+            opacity: 0.5;
+        }
+
+        /* ========================================
+           JSON SECTION
+           ======================================== */
+        .json-section {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
+            overflow: hidden;
+            margin-top: var(--space-xl);
+        }
+
+        .json-header {
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .json-header:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .json-header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .json-toggle {
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+
+        .json-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .json-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+
+        .json-content.open {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .json-output {
+            padding: var(--space-lg);
+            background: #0d1117;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #8b949e;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        /* ========================================
+           FOOTER
+           ======================================== */
+        .footer {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: var(--space-xl);
+        }
+
+        .footer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--bg-secondary);
+            padding: var(--space-xs) var(--space-md);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* ========================================
+           ANIMATIONS
+           ======================================== */
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes pulse {
@@ -311,146 +685,28 @@
             }
 
             50% {
-                opacity: 0.7;
-                transform: scale(1.2);
+                opacity: 0.6;
+                transform: scale(1.15);
             }
         }
 
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-normal {
-            background: rgba(39, 174, 96, 0.1);
-            color: var(--success-color);
-        }
-
-        .badge-warning {
-            background: rgba(243, 156, 18, 0.1);
-            color: var(--warning-color);
-        }
-
-        .badge-critical {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--accent-color);
-        }
-
-        /* Loading State */
-        .loading-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Error State */
-        .error-message {
-            background: rgba(231, 76, 60, 0.1);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        /* No Data */
-        .no-data {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        /* Expandable JSON Section */
-        .json-section {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            margin-top: 2rem;
-            overflow: hidden;
-        }
-
-        .json-header {
-            padding: 1rem 1.5rem;
-            background: var(--bg-color);
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .json-header:hover {
-            background: #e8f4f8;
-        }
-
-        .json-toggle {
-            transition: transform 0.3s;
-        }
-
-        .json-toggle.open {
-            transform: rotate(180deg);
-        }
-
-        .json-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-
-        .json-content.open {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .json-output {
-            padding: 1.5rem;
-            background: #1e272e;
-            color: #a4b0be;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.85rem;
-            white-space: pre-wrap;
-            line-height: 1.5;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
+        /* ========================================
+           RESPONSIVE
+           ======================================== */
+        @media (max-width: 1024px) {
             .results-container {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-md);
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: var(--space-md);
             }
 
             .patient-header {
@@ -461,6 +717,33 @@
             .patient-info-grid {
                 grid-template-columns: 1fr 1fr;
             }
+
+            .result-item {
+                flex-direction: column;
+                gap: var(--space-md);
+                align-items: flex-start;
+            }
+        }
+
+        /* ========================================
+           SCROLLBAR
+           ======================================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
     </style>
 </head>
@@ -469,21 +752,23 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <h1>
+            <div class="header-brand">
                 <div class="header-icon">🏥</div>
-                SMART on FHIR 病患資訊系統
-            </h1>
+                <h1 class="header-title"><span>SMART</span> on FHIR 醫療資訊系統</h1>
+            </div>
             <div class="header-time" id="current-time"></div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <div class="container">
+    <main class="container">
         <!-- Patient Basic Info -->
         <div id="patient-display">
-            <div class="loading-container">
-                <div class="loading-spinner"></div>
-                <p>正在載入病患資料，請稍候...</p>
+            <div class="patient-card">
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">正在連接 FHIR 伺服器...</p>
+                </div>
             </div>
         </div>
 
@@ -493,22 +778,30 @@
         <!-- JSON Debug Section -->
         <div class="json-section" id="json-section" style="display: none;">
             <div class="json-header" onclick="toggleJson()">
-                <span>📋 原始 FHIR 資料 (JSON)</span>
+                <div class="json-header-left">
+                    <span>📋</span>
+                    <span>原始 FHIR 資料 (JSON)</span>
+                </div>
                 <span class="json-toggle" id="json-toggle">▼</span>
             </div>
             <div class="json-content" id="json-content">
-                <div class="json-output" id="json-output"></div>
+                <pre class="json-output" id="json-output"></pre>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
-        <p>SMART on FHIR Application • FHIR R4</p>
+        <div class="footer-badge">
+            <span>⚡</span>
+            <span>FHIR R4 Compatible</span>
+        </div>
     </footer>
 
     <script>
-        // Update current time
+        // ========================================
+        // TIME UPDATE
+        // ========================================
         function updateTime() {
             const now = new Date();
             const options = {
@@ -517,14 +810,17 @@
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                weekday: 'short'
+                second: '2-digit',
+                hour12: false
             };
             document.getElementById('current-time').textContent = now.toLocaleString('zh-TW', options);
         }
         updateTime();
-        setInterval(updateTime, 60000);
+        setInterval(updateTime, 1000);
 
-        // Toggle JSON section
+        // ========================================
+        // JSON TOGGLE
+        // ========================================
         function toggleJson() {
             const content = document.getElementById('json-content');
             const toggle = document.getElementById('json-toggle');
@@ -532,170 +828,123 @@
             toggle.classList.toggle('open');
         }
 
-        // Gender translation
+        // ========================================
+        // HELPER FUNCTIONS
+        // ========================================
         function translateGender(gender) {
-            const genderMap = {
-                'male': '男性',
-                'female': '女性',
-                'other': '其他',
-                'unknown': '未知'
-            };
-            return genderMap[gender] || gender || '未標註';
+            const map = { 'male': '男性', 'female': '女性', 'other': '其他', 'unknown': '未知' };
+            return map[gender] || gender || '未標註';
         }
 
-        // Format date
         function formatDate(dateString) {
             if (!dateString) return '未標註';
             const date = new Date(dateString);
             return date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
         }
 
-        // Calculate age
         function calculateAge(birthDate) {
-            if (!birthDate) return '';
+            if (!birthDate) return '--';
             const today = new Date();
             const birth = new Date(birthDate);
             let age = today.getFullYear() - birth.getFullYear();
             const monthDiff = today.getMonth() - birth.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-                age--;
-            }
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
             return age + ' 歲';
         }
 
-        // Get name initials for avatar
         function getInitials(name) {
             if (!name) return '?';
             return name.charAt(0).toUpperCase();
         }
 
-        // Determine value status
         function getValueStatus(code, value) {
-            // Define normal ranges for common tests
-            const normalRanges = {
-                // Vital Signs
-                'heart-rate': { low: 60, high: 100 },
-                'respiratory-rate': { low: 12, high: 20 },
-                'body-temperature': { low: 36.1, high: 37.2 },
-                'oxygen-saturation': { low: 95, high: 100 },
-                'systolic-bp': { low: 90, high: 140 },
-                'diastolic-bp': { low: 60, high: 90 },
-                // Labs
-                'glucose': { low: 70, high: 100 },
-                'hemoglobin': { low: 12, high: 17 },
-                'wbc': { low: 4000, high: 11000 },
-                'platelet': { low: 150000, high: 400000 },
-                'creatinine': { low: 0.6, high: 1.2 },
+            const ranges = {
+                '8867-4': { low: 60, high: 100 },      // Heart rate
+                '9279-1': { low: 12, high: 20 },       // Respiratory rate
+                '8310-5': { low: 36.1, high: 37.2 },   // Body temperature
+                '2708-6': { low: 95, high: 100 },      // Oxygen saturation
+                '8480-6': { low: 90, high: 140 },      // Systolic BP
+                '8462-4': { low: 60, high: 90 },       // Diastolic BP
+                '2339-0': { low: 70, high: 100 },      // Glucose
+                '718-7': { low: 12, high: 17 },        // Hemoglobin
+                '6690-2': { low: 4, high: 11 },        // WBC (thousands)
+                '777-3': { low: 150, high: 400 },      // Platelet (thousands)
+                '2160-0': { low: 0.6, high: 1.2 },     // Creatinine
             };
 
-            const range = normalRanges[code];
+            const range = ranges[code];
             if (!range || isNaN(value)) return 'normal';
 
             const numValue = parseFloat(value);
-            if (numValue < range.low * 0.8 || numValue > range.high * 1.2) return 'critical';
+            if (numValue < range.low * 0.7 || numValue > range.high * 1.3) return 'critical';
             if (numValue < range.low || numValue > range.high) return 'warning';
             return 'normal';
         }
 
-        // Categorize observations
+        // ========================================
+        // CATEGORIZE OBSERVATIONS
+        // ========================================
         function categorizeObservations(observations) {
             const categories = {
-                vitalSigns: {
-                    title: '生命徵象',
-                    icon: '❤️',
-                    iconClass: 'vital',
-                    items: []
-                },
-                laboratory: {
-                    title: '實驗室檢驗',
-                    icon: '🔬',
-                    iconClass: 'lab',
-                    items: []
-                },
-                other: {
-                    title: '其他觀察紀錄',
-                    icon: '📊',
-                    iconClass: 'obs',
-                    items: []
-                }
+                vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: [] },
+                laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: [] },
+                other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: [] }
             };
 
-            const vitalSignCodes = [
-                '8867-4', // Heart rate
-                '9279-1', // Respiratory rate
-                '8310-5', // Body temperature
-                '2708-6', // Oxygen saturation
-                '85354-9', // Blood pressure panel
-                '8480-6', // Systolic BP
-                '8462-4', // Diastolic BP
-                '29463-7', // Body weight
-                '8302-2', // Body height
-                '39156-5', // BMI
-            ];
-
-            const labCodes = [
-                '2339-0', // Glucose
-                '718-7', // Hemoglobin
-                '6690-2', // WBC
-                '777-3', // Platelet
-                '2160-0', // Creatinine
-                '3094-0', // BUN
-                '1742-6', // ALT
-                '1920-8', // AST
-                '2093-3', // Cholesterol
-                '2571-8', // Triglyceride
-            ];
+            const vitalCodes = ['8867-4', '9279-1', '8310-5', '2708-6', '85354-9', '8480-6', '8462-4', '29463-7', '8302-2', '39156-5'];
+            const labCodes = ['2339-0', '718-7', '6690-2', '777-3', '2160-0', '3094-0', '1742-6', '1920-8', '2093-3', '2571-8'];
 
             observations.forEach(obs => {
                 if (!obs.resource) return;
-
                 const resource = obs.resource;
                 const coding = resource.code?.coding?.[0];
                 const code = coding?.code || '';
 
                 let category = 'other';
-                if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || vitalSignCodes.includes(code)) {
+                if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || vitalCodes.includes(code)) {
                     category = 'vitalSigns';
                 } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || labCodes.includes(code)) {
                     category = 'laboratory';
                 }
 
-                const item = {
+                categories[category].items.push({
                     name: coding?.display || resource.code?.text || '未知項目',
                     value: resource.valueQuantity?.value ?? resource.valueString ?? '--',
                     unit: resource.valueQuantity?.unit || '',
-                    date: resource.effectiveDateTime || resource.issued,
                     code: code
-                };
-
-                categories[category].items.push(item);
+                });
             });
 
             return categories;
         }
 
-        // Render patient info
+        // ========================================
+        // RENDER PATIENT INFO
+        // ========================================
         function renderPatientInfo(patient) {
             const name = patient.name?.[0]?.text ||
-                (patient.name?.[0]?.family + patient.name?.[0]?.given?.join('')) ||
+                (patient.name?.[0]?.family + (patient.name?.[0]?.given?.join('') || '')) ||
                 '未知姓名';
             const gender = translateGender(patient.gender);
-            const genderClass = patient.gender === 'male' ? 'gender-male' : patient.gender === 'female' ? 'gender-female' : '';
+            const genderClass = patient.gender === 'male' ? 'male' : patient.gender === 'female' ? 'female' : '';
             const birthDate = patient.birthDate;
             const age = calculateAge(birthDate);
             const patientId = patient.id || '未知';
             const phone = patient.telecom?.find(t => t.system === 'phone')?.value || '未登錄';
             const address = patient.address?.[0]?.text ||
-                (patient.address?.[0]?.city + patient.address?.[0]?.line?.join('')) ||
+                (patient.address?.[0]?.city || '') + (patient.address?.[0]?.line?.join('') || '') ||
                 '未登錄';
 
             return `
                 <div class="patient-card">
                     <div class="patient-header">
                         <div class="patient-avatar">${getInitials(name)}</div>
-                        <div>
+                        <div class="patient-main-info">
                             <div class="patient-name">${name}</div>
-                            <div class="patient-id">病患ID: ${patientId}</div>
+                            <div class="patient-id">
+                                <span>病患識別碼</span>
+                                <span class="patient-id-badge">${patientId}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="patient-info-grid">
@@ -709,14 +958,14 @@
                         </div>
                         <div class="info-item">
                             <span class="info-label">年齡</span>
-                            <span class="info-value">${age || '未知'}</span>
+                            <span class="info-value">${age}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">聯絡電話</span>
                             <span class="info-value">${phone}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">地址</span>
+                            <span class="info-label">通訊地址</span>
                             <span class="info-value">${address}</span>
                         </div>
                     </div>
@@ -724,58 +973,57 @@
             `;
         }
 
-        // Render observation categories
+        // ========================================
+        // RENDER OBSERVATIONS
+        // ========================================
         function renderObservations(categories) {
             let html = '<div class="results-container">';
+            let hasData = false;
 
             for (const [key, category] of Object.entries(categories)) {
                 if (category.items.length === 0) continue;
+                hasData = true;
 
                 html += `
                     <div class="results-section">
-                        <div class="section-title">
+                        <div class="section-header">
                             <div class="section-icon ${category.iconClass}">${category.icon}</div>
-                            ${category.title}
-                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 400;">(${category.items.length}項)</span>
+                            <span class="section-title">${category.title}</span>
+                            <span class="section-count">${category.items.length} 項</span>
                         </div>
                         <div class="result-list">
                 `;
 
                 category.items.forEach(item => {
                     const status = getValueStatus(item.code, item.value);
-                    const badgeClass = status === 'critical' ? 'badge-critical' : status === 'warning' ? 'badge-warning' : 'badge-normal';
                     const badgeText = status === 'critical' ? '異常' : status === 'warning' ? '偏離' : '正常';
 
                     html += `
                         <div class="result-item">
                             <div class="result-name">
-                                <span class="status-indicator status-${status}"></span>
-                                ${item.name}
+                                <span class="status-dot ${status}"></span>
+                                <span>${item.name}</span>
                             </div>
                             <div class="result-value-container">
                                 <span class="result-value">${item.value}</span>
                                 <span class="result-unit">${item.unit}</span>
-                                <span class="badge ${badgeClass}">${badgeText}</span>
+                                <span class="result-badge ${status}">${badgeText}</span>
                             </div>
                         </div>
                     `;
                 });
 
-                html += `
-                        </div>
-                    </div>
-                `;
+                html += '</div></div>';
             }
 
             html += '</div>';
 
-            // Check if all categories are empty
-            const totalItems = Object.values(categories).reduce((sum, cat) => sum + cat.items.length, 0);
-            if (totalItems === 0) {
+            if (!hasData) {
                 html = `
                     <div class="results-section">
                         <div class="no-data">
-                            <p>📭 目前沒有可顯示的檢查結果</p>
+                            <div class="no-data-icon">📭</div>
+                            <p>目前沒有可顯示的檢查結果</p>
                         </div>
                     </div>
                 `;
@@ -784,44 +1032,49 @@
             return html;
         }
 
-        // Main FHIR client logic
+        // ========================================
+        // MAIN FHIR CLIENT LOGIC
+        // ========================================
         FHIR.oauth2.ready()
             .then(async function (client) {
                 const patientId = client.patient.id;
                 let allData = {};
 
                 try {
-                    // Fetch patient data
+                    // Fetch patient
                     const patient = await client.request("Patient/" + patientId);
                     allData.patient = patient;
                     document.getElementById("patient-display").innerHTML = renderPatientInfo(patient);
 
-                    // Fetch observations (vital signs, labs, etc.)
+                    // Fetch observations
                     const observations = await client.request(`Observation?patient=${patientId}&_count=50&_sort=-date`);
                     allData.observations = observations;
 
-                    if (observations.entry && observations.entry.length > 0) {
+                    if (observations.entry?.length > 0) {
                         const categories = categorizeObservations(observations.entry);
                         document.getElementById("results-display").innerHTML = renderObservations(categories);
                     } else {
                         document.getElementById("results-display").innerHTML = `
                             <div class="results-section">
                                 <div class="no-data">
-                                    <p>📭 目前沒有可顯示的檢查結果</p>
+                                    <div class="no-data-icon">📭</div>
+                                    <p>目前沒有可顯示的檢查結果</p>
                                 </div>
                             </div>
                         `;
                     }
 
-                    // Show JSON section
+                    // Show JSON
                     document.getElementById("json-section").style.display = "block";
                     document.getElementById("json-output").textContent = JSON.stringify(allData, null, 2);
 
                 } catch (error) {
-                    console.error("Error fetching data:", error);
+                    console.error("Error:", error);
                     document.getElementById("results-display").innerHTML = `
-                        <div class="error-message">
-                            <p>⚠️ 無法載入檢查結果：${error.message}</p>
+                        <div class="error-container">
+                            <div class="error-icon">⚠️</div>
+                            <div class="error-title">無法載入檢查結果</div>
+                            <div class="error-message">${error.message}</div>
                         </div>
                     `;
                 }
@@ -829,9 +1082,12 @@
             .catch(function (error) {
                 console.error(error);
                 document.getElementById("patient-display").innerHTML = `
-                    <div class="error-message">
-                        <p>❌ 無法連接 FHIR 伺服器：${error.message}</p>
-                        <p style="margin-top: 0.5rem; font-size: 0.9rem;">請確認您已正確完成授權流程</p>
+                    <div class="patient-card">
+                        <div class="error-container">
+                            <div class="error-icon">❌</div>
+                            <div class="error-title">無法連接 FHIR 伺服器</div>
+                            <div class="error-message">${error.message}</div>
+                        </div>
                     </div>
                 `;
             });
