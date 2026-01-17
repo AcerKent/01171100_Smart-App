@@ -889,24 +889,54 @@
             return 'normal';
         }
 
+        // Format numeric values to appropriate decimal places
+        function formatValue(value, unit) {
+            if (value === null || value === undefined || value === '--') return '--';
+            if (typeof value === 'string') return value;
+
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+
+            // Determine decimal places based on unit/magnitude
+            if (unit === '%' || unit === 'bpm' || unit === '/min') {
+                return Math.round(num); // No decimals for percentages, heart rate
+            } else if (unit === '°C' || unit === 'degC') {
+                return num.toFixed(1); // 1 decimal for temperature
+            } else if (Math.abs(num) >= 100) {
+                return num.toFixed(0); // No decimals for large numbers
+            } else if (Math.abs(num) >= 10) {
+                return num.toFixed(1); // 1 decimal for medium numbers
+            } else {
+                return num.toFixed(2); // 2 decimals for small numbers
+            }
+        }
+
         // ========================================
         // CATEGORIZE OBSERVATIONS
         // ========================================
         function categorizeObservations(observations) {
             const categories = {
-                vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: [] },
-                laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: [] },
-                other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: [] }
+                vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: new Map() },
+                laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: new Map() },
+                other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: new Map() }
             };
 
             const vitalCodes = ['8867-4', '9279-1', '8310-5', '2708-6', '85354-9', '8480-6', '8462-4', '29463-7', '8302-2', '39156-5'];
             const labCodes = ['2339-0', '718-7', '6690-2', '777-3', '2160-0', '3094-0', '1742-6', '1920-8', '2093-3', '2571-8'];
 
-            observations.forEach(obs => {
+            // Sort by date descending to keep only the latest
+            const sortedObs = [...observations].sort((a, b) => {
+                const dateA = new Date(a.resource?.effectiveDateTime || 0);
+                const dateB = new Date(b.resource?.effectiveDateTime || 0);
+                return dateB - dateA;
+            });
+
+            sortedObs.forEach(obs => {
                 if (!obs.resource) return;
                 const resource = obs.resource;
                 const coding = resource.code?.coding?.[0];
                 const code = coding?.code || '';
+                const name = coding?.display || resource.code?.text || '未知項目';
 
                 let category = 'other';
                 if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || vitalCodes.includes(code)) {
@@ -915,15 +945,27 @@
                     category = 'laboratory';
                 }
 
-                categories[category].items.push({
-                    name: coding?.display || resource.code?.text || '未知項目',
-                    value: resource.valueQuantity?.value ?? resource.valueString ?? '--',
-                    unit: resource.valueQuantity?.unit || '',
-                    code: code
-                });
+                // Use Map to deduplicate by name (keeps first occurrence = most recent)
+                const itemKey = name + '_' + code;
+                if (!categories[category].items.has(itemKey)) {
+                    const rawValue = resource.valueQuantity?.value ?? resource.valueString ?? '--';
+                    const unit = resource.valueQuantity?.unit || '';
+
+                    categories[category].items.set(itemKey, {
+                        name: name,
+                        value: formatValue(rawValue, unit),
+                        unit: unit,
+                        code: code
+                    });
+                }
             });
 
-            return categories;
+            // Convert Maps to arrays for rendering
+            return {
+                vitalSigns: { ...categories.vitalSigns, items: Array.from(categories.vitalSigns.items.values()) },
+                laboratory: { ...categories.laboratory, items: Array.from(categories.laboratory.items.values()) },
+                other: { ...categories.other, items: Array.from(categories.other.items.values()) }
+            };
         }
 
         // ========================================
