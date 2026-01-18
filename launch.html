@@ -11,6 +11,9 @@
     <p>正在連線至 EHR 系統並進行授權...</p>
 
     <script>
+        // 清除舊的 SMART session，確保每次 launch 都是全新會話
+        sessionStorage.clear();
+
         // FHIR.oauth2.authorize 會自動處理 URL 中的 iss 和 launch 參數
         FHIR.oauth2.authorize({
             "clientId": "my_web_app", // 模擬器環境可自訂
