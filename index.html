@@ -958,8 +958,28 @@
                 // Use Map to deduplicate by name (keeps first occurrence = most recent)
                 const itemKey = name + '_' + code;
                 if (!categories[category].items.has(itemKey)) {
-                    const rawValue = resource.valueQuantity?.value ?? resource.valueString ?? '--';
-                    const unit = resource.valueQuantity?.unit || '';
+                    // Extract value from various FHIR value types
+                    let rawValue = '--';
+                    let unit = '';
+
+                    if (resource.valueQuantity?.value !== undefined) {
+                        rawValue = resource.valueQuantity.value;
+                        unit = resource.valueQuantity.unit || '';
+                    } else if (resource.valueCodeableConcept) {
+                        // Common for imaging findings (e.g., severity levels, interpretations)
+                        rawValue = resource.valueCodeableConcept.text ||
+                            resource.valueCodeableConcept.coding?.[0]?.display || '--';
+                    } else if (resource.valueString) {
+                        rawValue = resource.valueString;
+                    } else if (resource.valueInteger !== undefined) {
+                        rawValue = resource.valueInteger;
+                    } else if (resource.valueBoolean !== undefined) {
+                        rawValue = resource.valueBoolean ? '是' : '否';
+                    } else if (resource.interpretation?.[0]) {
+                        // Interpretation code (e.g., Normal, Abnormal)
+                        rawValue = resource.interpretation[0].text ||
+                            resource.interpretation[0].coding?.[0]?.display || '--';
+                    }
 
                     categories[category].items.set(itemKey, {
                         name: name,
