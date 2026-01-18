@@ -334,6 +334,11 @@
             border: 1px solid rgba(0, 255, 157, 0.3);
         }
 
+        .section-icon.imaging {
+            background: rgba(156, 39, 176, 0.15);
+            border: 1px solid rgba(156, 39, 176, 0.3);
+        }
+
         .section-icon.other {
             background: rgba(0, 217, 255, 0.1);
             border: 1px solid rgba(0, 217, 255, 0.3);
@@ -918,11 +923,14 @@
             const categories = {
                 vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: new Map() },
                 laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: new Map() },
+                imaging: { title: '影像檢驗', icon: '📷', iconClass: 'imaging', items: new Map() },
                 other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: new Map() }
             };
 
             const vitalCodes = ['8867-4', '9279-1', '8310-5', '2708-6', '85354-9', '8480-6', '8462-4', '29463-7', '8302-2', '39156-5'];
             const labCodes = ['2339-0', '718-7', '6690-2', '777-3', '2160-0', '3094-0', '1742-6', '1920-8', '2093-3', '2571-8'];
+            // Imaging related LOINC codes (Radiology, CT, MRI, X-Ray, Ultrasound findings)
+            const imagingCodes = ['18748-4', '18747-6', '18746-8', '24725-9', '30746-2', '24566-7', '36643-5', '42148-7', '44136-0', '24558-4'];
 
             // Sort by date descending to keep only the latest
             const sortedObs = [...observations].sort((a, b) => {
@@ -943,6 +951,8 @@
                     category = 'vitalSigns';
                 } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || labCodes.includes(code)) {
                     category = 'laboratory';
+                } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'imaging')) || imagingCodes.includes(code)) {
+                    category = 'imaging';
                 }
 
                 // Use Map to deduplicate by name (keeps first occurrence = most recent)
@@ -964,6 +974,7 @@
             return {
                 vitalSigns: { ...categories.vitalSigns, items: Array.from(categories.vitalSigns.items.values()) },
                 laboratory: { ...categories.laboratory, items: Array.from(categories.laboratory.items.values()) },
+                imaging: { ...categories.imaging, items: Array.from(categories.imaging.items.values()) },
                 other: { ...categories.other, items: Array.from(categories.other.items.values()) }
             };
         }
