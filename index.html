@@ -485,7 +485,7 @@
         .result-value-container {
             display: flex;
             align-items: center;
-            gap: var(--space-md);
+            gap: var(--space-lg);
         }
 
         .result-value {
@@ -493,12 +493,15 @@
             font-size: 1.05rem;
             font-weight: 600;
             color: var(--text-primary);
+            text-align: right;
+            min-width: 180px;
         }
 
         .result-unit {
             font-family: var(--font-mono);
             font-size: 0.8rem;
             color: var(--text-muted);
+            white-space: nowrap;
         }
 
         .result-badge {
