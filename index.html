@@ -241,6 +241,22 @@
             opacity: 0.3;
         }
 
+        .patient-avatar.male {
+            background: linear-gradient(135deg, #4fc3f7, #0288d1);
+        }
+
+        .patient-avatar.male::after {
+            border-color: #4fc3f7;
+        }
+
+        .patient-avatar.female {
+            background: linear-gradient(135deg, #f48fb1, #e91e63);
+        }
+
+        .patient-avatar.female::after {
+            border-color: #f48fb1;
+        }
+
         .patient-main-info {
             flex: 1;
         }
@@ -337,6 +353,16 @@
         .section-icon.imaging {
             background: rgba(156, 39, 176, 0.15);
             border: 1px solid rgba(156, 39, 176, 0.3);
+        }
+
+        .section-icon.verisee {
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .section-icon.veriosteo {
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid rgba(255, 152, 0, 0.3);
         }
 
         .section-icon.other {
@@ -464,7 +490,7 @@
 
         .result-value {
             font-family: var(--font-mono);
-            font-size: 1.15rem;
+            font-size: 1.05rem;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -478,10 +504,16 @@
         .result-badge {
             padding: var(--space-xs) var(--space-sm);
             border-radius: var(--radius-sm);
-            font-size: 0.7rem;
+            font-size: 0.9rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            min-width: 60px;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-wrap: balance;
         }
 
         .result-badge.normal {
@@ -870,7 +902,7 @@
             return name.charAt(0).toUpperCase();
         }
 
-        function getValueStatus(code, value, valueConceptCode) {
+        function getValueStatus(code, value, valueConceptCode, numericValue) {
             // Special handling for Diabetic Retinopathy (LOINC 71490-7 and 71491-5)
             // LA18645-4 = Mild NPDR, LA18646-2 = Moderate NPDR, LA18648-8 = Severe NPDR/PDR
             const referralCodes = ['LA18645-4', 'LA18646-2', 'LA18648-8'];
@@ -882,6 +914,25 @@
                 } else {
                     return 'normal'; // Regular follow-up
                 }
+            }
+
+            // VeriOsteo OP - T-score and Z-score thresholds
+            // 38267-1 = T-score, threshold <= -2.5 → critical
+            // 85394-5 = Z-score, threshold <= -2.0 → critical
+            if (code === '38267-1' && numericValue !== undefined) {
+                const tScore = parseFloat(numericValue);
+                if (!isNaN(tScore) && tScore <= -2.5) {
+                    return 'critical';
+                }
+                return 'normal';
+            }
+
+            if (code === '85394-5' && numericValue !== undefined) {
+                const zScore = parseFloat(numericValue);
+                if (!isNaN(zScore) && zScore <= -2.0) {
+                    return 'critical';
+                }
+                return 'normal';
             }
 
             const ranges = {
@@ -908,7 +959,8 @@
         }
 
         // Get badge text based on status and special codes
-        function getBadgeText(status, code, valueConceptCode) {
+        function getBadgeText(status, code, valueConceptCode, numericValue) {
+            // VeriSee DR - Diabetic Retinopathy referral logic
             const drCodes = ['71490-7', '71491-5'];
             const referralCodes = ['LA18645-4', 'LA18646-2', 'LA18648-8'];
 
@@ -917,6 +969,27 @@
                     return '建議轉診';
                 } else {
                     return '定期追蹤';
+                }
+            }
+
+            // VeriOsteo OP - Bone density score thresholds
+            // 38267-1 = T-score, threshold <= -2.5
+            // 85394-5 = Z-score, threshold <= -2.0
+            if (code === '38267-1' && numericValue !== undefined) {
+                const tScore = parseFloat(numericValue);
+                if (!isNaN(tScore) && tScore <= -2.5) {
+                    return '疑似異常';
+                } else {
+                    return '未發現明顯異常';
+                }
+            }
+
+            if (code === '85394-5' && numericValue !== undefined) {
+                const zScore = parseFloat(numericValue);
+                if (!isNaN(zScore) && zScore <= -2.0) {
+                    return '疑似異常';
+                } else {
+                    return '未發現明顯異常';
                 }
             }
 
@@ -949,11 +1022,13 @@
         // ========================================
         // CATEGORIZE OBSERVATIONS
         // ========================================
-        function categorizeObservations(observations) {
+        function categorizeObservations(observations, deviceMap = {}) {
             const categories = {
                 vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: new Map() },
                 laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: new Map() },
                 imaging: { title: '影像檢驗', icon: '📷', iconClass: 'imaging', items: new Map() },
+                verisee: { title: 'VeriSee DR (Acer Medical)', icon: '👁️', iconClass: 'verisee', items: new Map() },
+                veriosteo: { title: 'VeriOsteo OP (Acer Medical)', icon: '🦴', iconClass: 'veriosteo', items: new Map() },
                 other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: new Map() }
             };
 
@@ -972,21 +1047,101 @@
             sortedObs.forEach(obs => {
                 if (!obs.resource) return;
                 const resource = obs.resource;
-                const coding = resource.code?.coding?.[0];
-                const code = coding?.code || '';
-                const name = coding?.display || resource.code?.text || '未知項目';
+
+                // Get all codes from coding array
+                const allCodings = resource.code?.coding || [];
+                const allCodes = allCodings.map(c => c.code).filter(Boolean);
+                const primaryCoding = allCodings[0];
+                const primaryCode = primaryCoding?.code || '';
+                const name = primaryCoding?.display || resource.code?.text || '未知項目';
 
                 let category = 'other';
-                if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || vitalCodes.includes(code)) {
-                    category = 'vitalSigns';
-                } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || labCodes.includes(code)) {
-                    category = 'laboratory';
-                } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'imaging')) || imagingCodes.includes(code)) {
-                    category = 'imaging';
+
+                // VeriSee DR specific LOINC codes (Diabetic Retinopathy) - found in component
+                const veriseeCodes = ['71490-7', '71491-5'];
+                // VeriOsteo OP specific LOINC codes (Osteoporosis) - found in component
+                const veriosteoCodes = ['38267-1', '85394-5'];
+
+                // Check device-based categorization - look in COMPONENT array for specific codes
+                const deviceRef = resource.device?.reference;
+                if (deviceRef) {
+                    const deviceId = deviceRef.replace('Device/', '');
+                    const deviceName = deviceMap[deviceId];
+
+                    // Process VeriSee DR components
+                    if (deviceName === 'VeriSee DR' && resource.component) {
+                        resource.component.forEach(comp => {
+                            const compCodes = comp.code?.coding?.map(c => c.code) || [];
+                            const matchingCode = compCodes.find(c => veriseeCodes.includes(c));
+
+                            if (matchingCode) {
+                                const compName = comp.code?.coding?.[0]?.display || comp.code?.text || '未知項目';
+                                const compValue = comp.valueCodeableConcept?.text ||
+                                    comp.valueCodeableConcept?.coding?.[0]?.display ||
+                                    comp.valueQuantity?.value?.toString() || '--';
+                                const compUnit = comp.valueQuantity?.unit || '';
+                                const compValueCode = comp.valueCodeableConcept?.coding?.[0]?.code || '';
+
+                                const itemKey = compName + '_' + matchingCode;
+                                if (!categories.verisee.items.has(itemKey)) {
+                                    categories.verisee.items.set(itemKey, {
+                                        name: compName,
+                                        value: formatValue(compValue, compUnit),
+                                        unit: compUnit,
+                                        code: matchingCode,
+                                        valueConceptCode: compValueCode
+                                    });
+                                }
+                            }
+                        });
+                        return; // Skip normal processing for this observation
+                    }
+
+                    // Process VeriOsteo OP components
+                    if (deviceName === 'VeriOsteo OP' && resource.component) {
+                        resource.component.forEach(comp => {
+                            const compCodes = comp.code?.coding?.map(c => c.code) || [];
+                            const matchingCode = compCodes.find(c => veriosteoCodes.includes(c));
+
+                            if (matchingCode) {
+                                const compName = comp.code?.coding?.[0]?.display || comp.code?.text || '未知項目';
+                                const rawNumericValue = comp.valueQuantity?.value;
+                                const compValue = comp.valueCodeableConcept?.text ||
+                                    comp.valueCodeableConcept?.coding?.[0]?.display ||
+                                    (rawNumericValue !== undefined ? rawNumericValue.toString() : '--');
+                                const compUnit = comp.valueQuantity?.unit || '';
+                                const compValueCode = comp.valueCodeableConcept?.coding?.[0]?.code || '';
+
+                                const itemKey = compName + '_' + matchingCode;
+                                if (!categories.veriosteo.items.has(itemKey)) {
+                                    categories.veriosteo.items.set(itemKey, {
+                                        name: compName,
+                                        value: formatValue(compValue, compUnit),
+                                        unit: compUnit,
+                                        code: matchingCode,
+                                        valueConceptCode: compValueCode,
+                                        numericValue: rawNumericValue
+                                    });
+                                }
+                            }
+                        });
+                        return; // Skip normal processing for this observation
+                    }
+                }
+
+                // If not device-based, use existing categorization logic (check ALL codes)
+                if (category === 'other') {
+                    if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || allCodes.some(c => vitalCodes.includes(c))) {
+                        category = 'vitalSigns';
+                    } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || allCodes.some(c => labCodes.includes(c))) {
+                        category = 'laboratory';
+                    } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'imaging')) || allCodes.some(c => imagingCodes.includes(c))) {
+                        category = 'imaging';
+                    }
                 }
 
                 // Use Map to deduplicate by name (keeps first occurrence = most recent)
-                const itemKey = name + '_' + code;
+                const itemKey = name + '_' + primaryCode;
                 if (!categories[category].items.has(itemKey)) {
                     // Extract value from various FHIR value types
                     let rawValue = '--';
@@ -1018,7 +1173,7 @@
                         name: name,
                         value: formatValue(rawValue, unit),
                         unit: unit,
-                        code: code,
+                        code: primaryCode,
                         valueConceptCode: valueConceptCode
                     });
                 }
@@ -1029,6 +1184,8 @@
                 vitalSigns: { ...categories.vitalSigns, items: Array.from(categories.vitalSigns.items.values()) },
                 laboratory: { ...categories.laboratory, items: Array.from(categories.laboratory.items.values()) },
                 imaging: { ...categories.imaging, items: Array.from(categories.imaging.items.values()) },
+                verisee: { ...categories.verisee, items: Array.from(categories.verisee.items.values()) },
+                veriosteo: { ...categories.veriosteo, items: Array.from(categories.veriosteo.items.values()) },
                 other: { ...categories.other, items: Array.from(categories.other.items.values()) }
             };
         }
@@ -1053,7 +1210,7 @@
             return `
                 <div class="patient-card">
                     <div class="patient-header">
-                        <div class="patient-avatar">${escapeHtml(getInitials(name))}</div>
+                        <div class="patient-avatar ${genderClass}">${escapeHtml(getInitials(name))}</div>
                         <div class="patient-main-info">
                             <div class="patient-name">${escapeHtml(name)}</div>
                             <div class="patient-id">
@@ -1110,8 +1267,8 @@
                 `;
 
                 category.items.forEach(item => {
-                    const status = getValueStatus(item.code, item.value, item.valueConceptCode);
-                    const badgeText = getBadgeText(status, item.code, item.valueConceptCode);
+                    const status = getValueStatus(item.code, item.value, item.valueConceptCode, item.numericValue);
+                    const badgeText = getBadgeText(status, item.code, item.valueConceptCode, item.numericValue);
 
                     html += `
                         <div class="result-item">
@@ -1165,8 +1322,30 @@
                     const observations = await client.request(`Observation?patient=${patientId}&_count=50&_sort=-date`);
                     allData.observations = observations;
 
+                    // Build device lookup map from observations that have device references
+                    const deviceMap = {};
                     if (observations.entry?.length > 0) {
-                        const categories = categorizeObservations(observations.entry);
+                        const deviceRefs = new Set();
+                        observations.entry.forEach(obs => {
+                            const deviceRef = obs.resource?.device?.reference;
+                            if (deviceRef) {
+                                deviceRefs.add(deviceRef.replace('Device/', ''));
+                            }
+                        });
+
+                        // Fetch Device resources
+                        for (const deviceId of deviceRefs) {
+                            try {
+                                const device = await client.request(`Device/${deviceId}`);
+                                const deviceName = device.deviceName?.[0]?.name || '';
+                                deviceMap[deviceId] = deviceName;
+                            } catch (e) {
+                                console.log(`Failed to fetch Device/${deviceId}:`, e.message);
+                            }
+                        }
+                        allData.devices = deviceMap;
+
+                        const categories = categorizeObservations(observations.entry, deviceMap);
                         document.getElementById("results-display").innerHTML = renderObservations(categories);
                     } else {
                         document.getElementById("results-display").innerHTML = `
