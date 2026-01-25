@@ -1118,7 +1118,13 @@
                         return; // Skip normal processing for this observation
                     }
 
-                    // Process VeriOsteo OP components
+                    // VeriOsteo OP - Bone Density Score Processing
+                    // Age-based Display Rules:
+                    //   T-score (38267-1): 適用於 ≥50 歲（含）患者
+                    //   Z-score (85394-5): 適用於 20~49 歲患者
+                    // Threshold Alerts:
+                    //   T-score ≤ -2.5 → 疑似異常 (critical)
+                    //   Z-score ≤ -2.0 → 疑似異常 (critical)
                     if (deviceName === 'VeriOsteo OP' && resource.component) {
                         resource.component.forEach(comp => {
                             const compCodes = comp.code?.coding?.map(c => c.code) || [];
