@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART on FHIR | 病患資訊總覽</title>
-    <meta name="description" content="SMART on FHIR 醫療資訊系統 - 病患資料與檢驗結果儀表板">
+    <title>VeriInsights 智醫分析洞察</title>
+    <meta name="description" content="VeriInsights 智醫分析洞察">
 
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
@@ -35,9 +35,9 @@
             --bg-elevated: #2a323e;
 
             /* Accent Colors */
-            --accent-primary: #00d9ff;
-            --accent-secondary: #0099cc;
-            --accent-glow: rgba(0, 217, 255, 0.15);
+            --accent-primary: #83B81A;
+            --accent-secondary: #6a9615;
+            --accent-glow: rgba(131, 184, 26, 0.15);
 
             /* Status Colors */
             --status-normal: #00ff9d;
@@ -152,13 +152,8 @@
         .header-icon {
             width: 44px;
             height: 44px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            box-shadow: var(--shadow-glow);
+            object-fit: contain;
         }
 
         .header-title {
@@ -800,8 +795,8 @@
     <header class="header">
         <div class="header-content">
             <div class="header-brand">
-                <div class="header-icon">🏥</div>
-                <h1 class="header-title"><span>SMART</span> on FHIR 醫療資訊系統</h1>
+                <img src="icons/title-icon.png" alt="VeriInsights" class="header-icon">
+                <h1 class="header-title"><span>VeriInsights</span> 智醫分析洞察</h1>
             </div>
             <div class="header-time" id="current-time"></div>
         </div>

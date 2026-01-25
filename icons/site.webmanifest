@@ -1,6 +1,6 @@
 {
-    "name": "SMART on FHIR 醫療資訊系統",
-    "short_name": "SMART FHIR",
+    "name": "VeriInsights 智醫分析洞察",
+    "short_name": "VeriInsights",
     "start_url": "../index.html",
     "icons": [
         {
