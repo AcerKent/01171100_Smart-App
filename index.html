@@ -909,10 +909,17 @@
         }
 
         function getValueStatus(code, value, valueConceptCode, numericValue) {
-            // Special handling for Diabetic Retinopathy (LOINC 71490-7 and 71491-5)
-            // LA18645-4 = Mild NPDR, LA18646-2 = Moderate NPDR, LA18648-8 = Severe NPDR/PDR
-            const referralCodes = ['LA18645-4', 'LA18646-2', 'LA18648-8'];
+            // VeriSee DR - Diabetic Retinopathy Severity Classification
+            // LOINC: 71490-7 (Left eye), 71491-5 (Right eye)
+            // Answer Codes:
+            //   LA18643-9: No apparent retinopathy        → 定期追蹤 (normal)
+            //   LA18644-7: Mild non-proliferative         → 定期追蹤 (normal)
+            //   LA18645-4: Moderate non-proliferative     → 建議轉診 (critical)
+            //   LA18646-2: Severe non-proliferative       → 建議轉診 (critical)
+            //   LA18648-8: Proliferative retinopathy      → 建議轉診 (critical)
             const drCodes = ['71490-7', '71491-5'];
+            const referralCodes = ['LA18645-4', 'LA18646-2', 'LA18648-8'];
+            const followUpCodes = ['LA18643-9', 'LA18644-7'];
 
             if (drCodes.includes(code) && valueConceptCode) {
                 if (referralCodes.includes(valueConceptCode)) {
@@ -966,9 +973,17 @@
 
         // Get badge text based on status and special codes
         function getBadgeText(status, code, valueConceptCode, numericValue) {
-            // VeriSee DR - Diabetic Retinopathy referral logic
+            // VeriSee DR - Diabetic Retinopathy Severity Classification
+            // LOINC: 71490-7 (Left eye), 71491-5 (Right eye)
+            // Answer Codes:
+            //   LA18643-9: No apparent retinopathy        → 定期追蹤
+            //   LA18644-7: Mild non-proliferative         → 定期追蹤
+            //   LA18645-4: Moderate non-proliferative     → 建議轉診
+            //   LA18646-2: Severe non-proliferative       → 建議轉診
+            //   LA18648-8: Proliferative retinopathy      → 建議轉診
             const drCodes = ['71490-7', '71491-5'];
             const referralCodes = ['LA18645-4', 'LA18646-2', 'LA18648-8'];
+            const followUpCodes = ['LA18643-9', 'LA18644-7'];
 
             if (drCodes.includes(code)) {
                 if (referralCodes.includes(valueConceptCode)) {
