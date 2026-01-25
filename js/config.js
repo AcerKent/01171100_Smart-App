@@ -47,47 +47,7 @@ const VERIOSTEO_OP = {
     zScoreMaxAge: 49
 };
 
-// Vital Signs LOINC codes
-const VITAL_CODES = [
-    '8867-4',   // Heart rate
-    '9279-1',   // Respiratory rate
-    '8310-5',   // Body temperature
-    '2708-6',   // Oxygen saturation
-    '85354-9',  // Blood pressure panel
-    '8480-6',   // Systolic BP
-    '8462-4',   // Diastolic BP
-    '29463-7',  // Body weight
-    '8302-2',   // Body height
-    '39156-5'   // BMI
-];
 
-// Laboratory LOINC codes
-const LAB_CODES = [
-    '2339-0',   // Glucose
-    '718-7',    // Hemoglobin
-    '6690-2',   // WBC
-    '777-3',    // Platelet
-    '2160-0',   // Creatinine
-    '3094-0',   // BUN
-    '1742-6',   // ALT
-    '1920-8',   // AST
-    '2093-3',   // Cholesterol
-    '2571-8'    // Triglycerides
-];
-
-// Imaging LOINC codes
-const IMAGING_CODES = [
-    '18748-4',  // Diagnostic imaging study
-    '18747-6',  // CT study
-    '18746-8',  // MRI study
-    '24725-9',  // X-Ray
-    '30746-2',  // Ultrasound
-    '24566-7',  // Mammography
-    '36643-5',  // XR Chest
-    '42148-7',  // US Abdomen
-    '44136-0',  // PET scan
-    '24558-4'   // MR Brain
-];
 
 // ========================================
 // REFERENCE RANGES

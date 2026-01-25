@@ -17,12 +17,8 @@
  */
 function categorizeObservations(observations, deviceMap = {}, patientAge = null) {
     const categories = {
-        // vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: new Map() },
-        // laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: new Map() },
-        // imaging: { title: '影像檢驗', icon: '📷', iconClass: 'imaging', items: new Map() },
         verisee: { title: 'VeriSee DR (Acer Medical)', icon: '👁️', iconClass: 'verisee', items: new Map() },
         veriosteo: { title: 'VeriOsteo OP (Acer Medical)', icon: '🦴', iconClass: 'veriosteo', items: new Map() },
-        // other: { title: '其他觀察紀錄', icon: '📊', iconClass: 'other', items: new Map() }
     };
 
     // Sort by date descending to keep only the latest
@@ -38,7 +34,6 @@ function categorizeObservations(observations, deviceMap = {}, patientAge = null)
 
         // Get all codes from coding array
         const allCodings = resource.code?.coding || [];
-        const allCodes = allCodings.map(c => c.code).filter(Boolean);
         const primaryCoding = allCodings[0];
         const primaryCode = primaryCoding?.code || '';
         const name = primaryCoding?.display || resource.code?.text || '未知項目';
@@ -64,22 +59,6 @@ function categorizeObservations(observations, deviceMap = {}, patientAge = null)
             }
         }
 
-        /*
-        // Standard categorization by LOINC codes
-        if (category === 'other') {
-            if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'vital-signs')) || 
-                allCodes.some(c => VITAL_CODES.includes(c))) {
-                category = 'vitalSigns';
-            } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'laboratory')) || 
-                       allCodes.some(c => LAB_CODES.includes(c))) {
-                category = 'laboratory';
-            } else if (resource.category?.some(cat => cat.coding?.some(c => c.code === 'imaging')) || 
-                       allCodes.some(c => IMAGING_CODES.includes(c))) {
-                category = 'imaging';
-            }
-        }
-        */
-
         // Add to category (deduplicate by name)
         const itemKey = name + '_' + primaryCode;
         if (category !== 'other' && categories[category] && !categories[category].items.has(itemKey)) {
@@ -96,12 +75,8 @@ function categorizeObservations(observations, deviceMap = {}, patientAge = null)
 
     // Convert Maps to arrays for rendering
     return {
-        // vitalSigns: { ...categories.vitalSigns, items: Array.from(categories.vitalSigns.items.values()) },
-        // laboratory: { ...categories.laboratory, items: Array.from(categories.laboratory.items.values()) },
-        // imaging: { ...categories.imaging, items: Array.from(categories.imaging.items.values()) },
         verisee: { ...categories.verisee, items: Array.from(categories.verisee.items.values()) },
         veriosteo: { ...categories.veriosteo, items: Array.from(categories.veriosteo.items.values()) },
-        // other: { ...categories.other, items: Array.from(categories.other.items.values()) }
     };
 }
 
