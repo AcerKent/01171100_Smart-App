@@ -1028,7 +1028,7 @@
         // ========================================
         // CATEGORIZE OBSERVATIONS
         // ========================================
-        function categorizeObservations(observations, deviceMap = {}) {
+        function categorizeObservations(observations, deviceMap = {}, patientAge = null) {
             const categories = {
                 vitalSigns: { title: '生命徵象', icon: '❤️', iconClass: 'vital', items: new Map() },
                 laboratory: { title: '實驗室檢驗', icon: '🔬', iconClass: 'lab', items: new Map() },
@@ -1110,6 +1110,13 @@
                             const matchingCode = compCodes.find(c => veriosteoCodes.includes(c));
 
                             if (matchingCode) {
+                                // Age-based filtering: T-score for >=50, Z-score for 20-49
+                                if (patientAge !== null) {
+                                    const isTScore = matchingCode === '38267-1';
+                                    const isZScore = matchingCode === '85394-5';
+                                    if (isTScore && patientAge < 50) return; // Skip T-score if under 50
+                                    if (isZScore && (patientAge < 20 || patientAge >= 50)) return; // Skip Z-score if not 20-49
+                                }
                                 const compName = comp.code?.coding?.[0]?.display || comp.code?.text || '未知項目';
                                 const rawNumericValue = comp.valueQuantity?.value;
                                 const compValue = comp.valueCodeableConcept?.text ||
@@ -1351,7 +1358,10 @@
                         }
                         allData.devices = deviceMap;
 
-                        const categories = categorizeObservations(observations.entry, deviceMap);
+                        // Calculate patient age for VeriOsteo filtering
+                        const patientAge = patient.birthDate ? calculateAge(patient.birthDate) : null;
+                        const numericAge = patientAge ? parseInt(patientAge.replace(/[^0-9]/g, '')) : null;
+                        const categories = categorizeObservations(observations.entry, deviceMap, numericAge);
                         document.getElementById("results-display").innerHTML = renderObservations(categories);
                     } else {
                         document.getElementById("results-display").innerHTML = `
