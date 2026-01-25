@@ -33,7 +33,7 @@
 
 ## 📸 介面預覽 (Screenshots)
 
-*(請在此處貼上應用程式運行截圖)*
+![VeriInsights Interface](assets/app-preview.png)
 
 ---
 
