@@ -33,7 +33,11 @@
 
 ## 📸 介面預覽 (Screenshots)
 
-![VeriInsights Interface](assets/app-preview.png)
+![Patient Details](assets/app-preview%203.png)
+<br/>
+![VeriSee DR Result](assets/app-preview%201.png)
+<br/>
+![VeriOsteo OP Result](assets/app-preview%202.png)
 
 ---
 
